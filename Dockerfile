@@ -51,17 +51,18 @@ ARG NUM_JOBS=
 
 # Build MongoDB using Bazel
 # Note: MongoDB 8.x uses Bazel instead of SCons
-# The --config=local flag is required for building outside MongoDB's CI
+# --config=local is required for building outside MongoDB's CI
+# --//bazel/config:build_enterprise=False explicitly disables enterprise modules
 RUN export GIT_PYTHON_REFRESH=quiet && \
     if [ -n "${NUM_JOBS}" ] && [ "${NUM_JOBS}" -gt 0 ]; then \
         export JOBS_ARG="--jobs=${NUM_JOBS}"; \
     fi && \
     bazel build \
-        --config=local \
+        --//bazel/config:build_enterprise=False \
         --disable_warnings_as_errors=True \
         ${JOBS_ARG} \
-        install-mongod \
-        install-mongos
+        //:install-mongod \
+        //:install-mongos
 
 # Strip and prepare binaries
 RUN strip --strip-debug bazel-bin/install/bin/mongod && \
