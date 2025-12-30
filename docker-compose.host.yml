@@ -1,0 +1,54 @@
+# Docker Compose for Omada Controller with External MongoDB (no AVX)
+# Using HOST NETWORKING MODE (recommended for device discovery)
+
+services:
+  mongodb:
+    # Use pre-built image from GHCR
+    image: ghcr.io/fenio/mongodb-no-avx:8.0.17
+    # Or build locally (uncomment below, comment out image above)
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   args:
+    #     MONGO_VERSION: "8.0.17"
+    #     NUM_JOBS: ""
+    container_name: omada-mongodb
+    restart: unless-stopped
+    volumes:
+      - mongodb-data:/data/db
+    # Bind to localhost only since controller is on host network
+    command: ["--bind_ip", "127.0.0.1", "--port", "27017"]
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "mongod", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  omada-controller:
+    image: mbentley/omada-controller:6.0
+    container_name: omada-controller
+    restart: unless-stopped
+    stop_grace_period: 60s
+    network_mode: host
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 8192
+    environment:
+      - TZ=Etc/UTC
+      # External MongoDB configuration - localhost since using host networking
+      - MONGO_EXTERNAL=true
+      - EAP_MONGOD_URI=mongodb://127.0.0.1:27017/omada
+    volumes:
+      - omada-data:/opt/tplink/EAPController/data
+      - omada-logs:/opt/tplink/EAPController/logs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+volumes:
+  mongodb-data:
+  omada-data:
+  omada-logs:

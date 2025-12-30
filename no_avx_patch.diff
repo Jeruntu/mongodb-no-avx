@@ -1,0 +1,32 @@
+# MongoDB 8.x No-AVX Patch Reference
+#
+# This file documents the change made to disable AVX CPU requirements.
+# The actual patching is done via sed in the Dockerfile.
+#
+# File: bazel/toolchains/cc/mongo_linux/mongo_linux_cc_toolchain_config.bzl
+#
+# Original (around line 1545-1550):
+#   if ctx.attr.is_x86_64:
+#       mtune_flags += ["-march=sandybridge", "-mtune=generic", "-mprefer-vector-width=128"]
+#
+# Changed to:
+#   if ctx.attr.is_x86_64:
+#       mtune_flags += ["-march=x86-64-v2", "-mtune=generic"]
+#
+# Why x86-64-v2?
+# - x86-64-v2 requires SSE4.2, SSSE3, POPCNT, CMPXCHG16B (reasonable baseline)
+# - Does NOT require AVX (which sandybridge implies)
+# - Compatible with Intel Westmere (2010+), AMD Bulldozer (2011+)
+#
+# Architecture comparison:
+# | -march        | AVX Required | Year | Notes                    |
+# |---------------|--------------|------|--------------------------|
+# | x86-64        | No           | 2003 | Baseline AMD64/Intel64   |
+# | x86-64-v2     | No           | 2008 | Adds SSE4.2, POPCNT      |
+# | westmere      | No           | 2010 | Last pre-AVX Intel       |
+# | sandybridge   | Yes (AVX)    | 2011 | MongoDB 8.x default      |
+# | x86-64-v3     | Yes (AVX2)   | 2013 | Haswell-era baseline     |
+#
+# The sed command used in the Dockerfile:
+# sed -i 's/-march=sandybridge", "-mtune=generic", "-mprefer-vector-width=128/-march=x86-64-v2", "-mtune=generic/g' \
+#     bazel/toolchains/cc/mongo_linux/mongo_linux_cc_toolchain_config.bzl

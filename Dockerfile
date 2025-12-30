@@ -1,0 +1,111 @@
+# MongoDB without AVX for use with Omada Controller
+# Based on https://github.com/alanedwardes/mongodb-without-avx
+# Updated for MongoDB 8.x with Bazel build system
+
+FROM debian:12 AS build
+
+# Install build dependencies for MongoDB 8.x with Bazel
+RUN apt-get update -y && apt-get install -y \
+        build-essential \
+        libcurl4-openssl-dev \
+        liblzma-dev \
+        libssl-dev \
+        python-dev-is-python3 \
+        python3-pip \
+        python3-venv \
+        lld \
+        curl \
+        git \
+        pkg-config \
+        openjdk-17-jdk \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG MONGO_VERSION=8.0.17
+
+# Download MongoDB source
+RUN mkdir /src && \
+    curl -o /tmp/mongo.tar.gz -L "https://github.com/mongodb/mongo/archive/refs/tags/r${MONGO_VERSION}.tar.gz" && \
+    tar xaf /tmp/mongo.tar.gz --strip-components=1 -C /src && \
+    rm /tmp/mongo.tar.gz
+
+WORKDIR /src
+
+# Set up Python virtual environment for build scripts
+RUN python3 -m venv /buildenv && \
+    . /buildenv/bin/activate && \
+    pip install --upgrade pip && \
+    pip install requirements_parser && \
+    pip install -r etc/pip/compile-requirements.txt
+
+# Install Bazel using MongoDB's install script (handles correct version)
+ENV PATH="/buildenv/bin:/root/.local/bin:${PATH}"
+RUN . /buildenv/bin/activate && \
+    python buildscripts/install_bazel.py && \
+    bazel --version
+
+# Apply the no-AVX patch to disable sandybridge/AVX optimizations
+# The patch modifies bazel/toolchains/cc/mongo_linux/mongo_linux_cc_toolchain_config.bzl
+# to use -march=x86-64-v2 instead of -march=sandybridge
+# x86-64-v2 supports SSE4.2 and POPCNT but NOT AVX (compatible with pre-2011 CPUs)
+RUN sed -i 's/-march=sandybridge", "-mtune=generic", "-mprefer-vector-width=128/-march=x86-64-v2", "-mtune=generic/g' \
+    bazel/toolchains/cc/mongo_linux/mongo_linux_cc_toolchain_config.bzl && \
+    echo "Patch applied. Verifying:" && \
+    grep -n "march=" bazel/toolchains/cc/mongo_linux/mongo_linux_cc_toolchain_config.bzl | grep x86_64
+
+ARG NUM_JOBS=
+
+# Build MongoDB using Bazel
+# Note: MongoDB 8.x uses Bazel instead of SCons
+RUN . /buildenv/bin/activate && \
+    export GIT_PYTHON_REFRESH=quiet && \
+    if [ -n "${NUM_JOBS}" ] && [ "${NUM_JOBS}" -gt 0 ]; then \
+        export JOBS_ARG="--jobs=${NUM_JOBS}"; \
+    fi && \
+    bazel build \
+        --config=local \
+        --disable_warnings_as_errors=True \
+        ${JOBS_ARG} \
+        install-mongod \
+        install-mongos
+
+# Strip and prepare binaries
+RUN strip --strip-debug bazel-bin/install/bin/mongod && \
+    strip --strip-debug bazel-bin/install/bin/mongos && \
+    ls -la bazel-bin/install/bin/
+
+# Final image
+FROM debian:12-slim
+
+# Install runtime dependencies
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+        libcurl4 \
+        libssl3 \
+        liblzma5 \
+        ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy MongoDB binaries
+COPY --from=build /src/bazel-bin/install/bin/mongod /usr/local/bin/
+COPY --from=build /src/bazel-bin/install/bin/mongos /usr/local/bin/
+
+# Create data directory with proper permissions
+RUN mkdir -p /data/db /data/configdb && \
+    chmod -R 750 /data && \
+    chown -R 999:999 /data
+
+# Create mongodb user
+RUN groupadd -r mongodb --gid=999 && \
+    useradd -r -g mongodb --uid=999 mongodb
+
+# Set volume for data persistence
+VOLUME ["/data/db", "/data/configdb"]
+
+# Expose MongoDB default port
+EXPOSE 27017
+
+USER mongodb
+
+ENTRYPOINT ["/usr/local/bin/mongod"]
+CMD ["--bind_ip_all"]
