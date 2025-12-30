@@ -11,7 +11,7 @@ on:
       mongo_version:
         description: 'MongoDB version to build'
         required: true
-        default: '8.0.17'
+        default: '7.0.16'
         type: string
 
 env:
@@ -21,7 +21,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 480  # 8 hours max for MongoDB Bazel compilation
+    timeout-minutes: 480  # 8 hours max for MongoDB compilation
     
     permissions:
       contents: read
@@ -48,7 +48,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=8.0.17
+            type=raw,value=7.0.16
+            type=raw,value=7.0
+            type=raw,value=7
             type=raw,value=latest
 
       - name: Build and push
@@ -60,7 +62,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            MONGO_VERSION=8.0.17
+            MONGO_VERSION=7.0.16
             NUM_JOBS=4
           cache-from: type=gha
           cache-to: type=gha,mode=max
