@@ -30,18 +30,13 @@ RUN mkdir /src && \
 
 WORKDIR /src
 
-# Set up Python virtual environment for build scripts
-RUN python3 -m venv /buildenv && \
-    . /buildenv/bin/activate && \
-    pip install --upgrade pip && \
-    pip install requirements_parser && \
-    pip install -r etc/pip/compile-requirements.txt
+# Install Bazelisk directly (handles correct Bazel version automatically)
+# This avoids needing MongoDB's install_bazel.py which has additional Python dependencies
+RUN mkdir -p /root/.local/bin && \
+    curl -L -o /root/.local/bin/bazel https://github.com/bazelbuild/bazelisk/releases/download/v1.25.0/bazelisk-linux-amd64 && \
+    chmod +x /root/.local/bin/bazel
 
-# Install Bazel using MongoDB's install script (handles correct version)
-ENV PATH="/buildenv/bin:/root/.local/bin:${PATH}"
-RUN . /buildenv/bin/activate && \
-    python buildscripts/install_bazel.py && \
-    bazel --version
+ENV PATH="/root/.local/bin:${PATH}"
 
 # Apply the no-AVX patch to disable sandybridge/AVX optimizations
 # The patch modifies bazel/toolchains/cc/mongo_linux/mongo_linux_cc_toolchain_config.bzl
@@ -56,8 +51,8 @@ ARG NUM_JOBS=
 
 # Build MongoDB using Bazel
 # Note: MongoDB 8.x uses Bazel instead of SCons
-RUN . /buildenv/bin/activate && \
-    export GIT_PYTHON_REFRESH=quiet && \
+# The --config=local flag is required for building outside MongoDB's CI
+RUN export GIT_PYTHON_REFRESH=quiet && \
     if [ -n "${NUM_JOBS}" ] && [ "${NUM_JOBS}" -gt 0 ]; then \
         export JOBS_ARG="--jobs=${NUM_JOBS}"; \
     fi && \
