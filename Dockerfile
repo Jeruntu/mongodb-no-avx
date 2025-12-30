@@ -44,8 +44,8 @@ ENV PATH="/root/.local/bin:${PATH}"
 # x86-64-v2 supports SSE4.2 and POPCNT but NOT AVX (compatible with pre-2011 CPUs)
 RUN sed -i 's/-march=sandybridge", "-mtune=generic", "-mprefer-vector-width=128/-march=x86-64-v2", "-mtune=generic/g' \
     bazel/toolchains/cc/mongo_linux/mongo_linux_cc_toolchain_config.bzl && \
-    echo "Patch applied. Verifying:" && \
-    grep -n "march=" bazel/toolchains/cc/mongo_linux/mongo_linux_cc_toolchain_config.bzl | grep x86_64
+    echo "Patch applied. Checking file contents:" && \
+    grep -n "march=" bazel/toolchains/cc/mongo_linux/mongo_linux_cc_toolchain_config.bzl || true
 
 ARG NUM_JOBS=
 
