@@ -11,7 +11,7 @@ on:
       mongo_version:
         description: 'MongoDB version to build'
         required: true
-        default: '7.0.16'
+        default: '7.0.28'
         type: string
 
 env:
@@ -28,6 +28,17 @@ jobs:
       packages: write
 
     steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -48,7 +59,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=7.0.16
+            type=raw,value=7.0.28
             type=raw,value=7.0
             type=raw,value=7
             type=raw,value=latest
@@ -62,7 +73,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            MONGO_VERSION=7.0.16
+            MONGO_VERSION=7.0.28
             NUM_JOBS=4
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -77,6 +88,17 @@ jobs:
       packages: write
 
     steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - name: Checkout repository
         uses: actions/checkout@v4
 

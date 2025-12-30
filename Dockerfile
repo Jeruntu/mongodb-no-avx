@@ -19,7 +19,7 @@ RUN apt-get update -y && apt-get install -y \
         pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-ARG MONGO_VERSION=7.0.16
+ARG MONGO_VERSION=7.0.28
 
 # Download MongoDB source
 RUN mkdir /src && \

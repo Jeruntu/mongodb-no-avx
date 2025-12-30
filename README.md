@@ -9,10 +9,10 @@ Based on the work from [alanedwardes/mongodb-without-avx](https://github.com/ala
 Pre-built images are available from GitHub Container Registry:
 
 ```bash
-docker pull ghcr.io/fenio/mongodb-no-avx:7.0.16
+docker pull ghcr.io/fenio/mongodb-no-avx:7.0.28
 docker pull ghcr.io/fenio/mongodb-no-avx:7.0
 docker pull ghcr.io/fenio/mongodb-no-avx:7
-docker pull ghcr.io/fenio/mongodb-no-avx:latest  # Same as 7.0.16
+docker pull ghcr.io/fenio/mongodb-no-avx:latest  # Same as 7.0.28
 ```
 
 ## Why?
@@ -32,20 +32,20 @@ MongoDB 7.x uses SCons build system with the `experimental-optimization` option 
 ### Quick Build
 
 ```bash
-docker build -t mongodb-no-avx:7.0.16 .
+docker build -t mongodb-no-avx:7.0.28 .
 ```
 
 ### Build with Specific Version
 
 ```bash
 docker build \
-  --build-arg MONGO_VERSION=7.0.16 \
+  --build-arg MONGO_VERSION=7.0.28 \
   --build-arg NUM_JOBS=4 \
-  -t mongodb-no-avx:7.0.16 .
+  -t mongodb-no-avx:7.0.28 .
 ```
 
 **Build Arguments:**
-- `MONGO_VERSION`: MongoDB version to build (default: `7.0.16`)
+- `MONGO_VERSION`: MongoDB version to build (default: `7.0.28`)
 - `NUM_JOBS`: Number of parallel SCons build jobs (leave empty for auto-detect)
 
 **Note:** Building MongoDB from source takes a LONG time (2-6+ hours depending on your hardware) and requires significant resources:
@@ -62,7 +62,7 @@ docker run -d \
   --name mongodb \
   -p 27017:27017 \
   -v mongodb-data:/data/db \
-  ghcr.io/fenio/mongodb-no-avx:7.0.16
+  ghcr.io/fenio/mongodb-no-avx:7.0.28
 ```
 
 ### With Omada Controller (Bridge Networking)
@@ -114,8 +114,8 @@ For local/container networking:
 The build supports MongoDB 7.0.x versions. To build a specific version:
 
 ```bash
-# MongoDB 7.0.16 (default - recommended for Omada Controller)
-docker build --build-arg MONGO_VERSION=7.0.16 -t mongodb-no-avx:7.0.16 .
+# MongoDB 7.0.28 (default - recommended for Omada Controller)
+docker build --build-arg MONGO_VERSION=7.0.28 -t mongodb-no-avx:7.0.28 .
 ```
 
 **Note:** MongoDB 8.x uses Bazel build system which has enterprise module dependencies that complicate community builds. This Dockerfile is optimized for MongoDB 7.x which uses the SCons build system.
