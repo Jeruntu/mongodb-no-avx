@@ -30,10 +30,13 @@ RUN mkdir /src && \
 
 WORKDIR /src
 
-# Create stub enterprise directory to satisfy build dependencies
+# Create stub enterprise directory structure to satisfy build dependencies
 # MongoDB's open source build has references to enterprise paths that need to exist
-RUN mkdir -p src/mongo/db/modules/enterprise && \
-    touch src/mongo/db/modules/enterprise/BUILD.bazel
+RUN mkdir -p src/mongo/db/modules/enterprise/src/workloads/streams && \
+    echo '# Stub BUILD file for community build' > src/mongo/db/modules/enterprise/BUILD.bazel && \
+    echo '# Stub BUILD file for community build' > src/mongo/db/modules/enterprise/src/BUILD.bazel && \
+    echo '# Stub BUILD file for community build' > src/mongo/db/modules/enterprise/src/workloads/BUILD.bazel && \
+    echo '# Stub BUILD file for community build' > src/mongo/db/modules/enterprise/src/workloads/streams/BUILD.bazel
 
 # Install Bazelisk directly (handles correct Bazel version automatically)
 # This avoids needing MongoDB's install_bazel.py which has additional Python dependencies
@@ -55,14 +58,14 @@ RUN sed -i 's/-march=sandybridge", "-mtune=generic", "-mprefer-vector-width=128/
 ARG NUM_JOBS=
 
 # Build MongoDB using Bazel
-# Note: MongoDB 8.x uses Bazel instead of SCons
-# --config=local is required for building outside MongoDB's CI
+# --config=local disables remote execution (required for building outside MongoDB's infra)
 # --//bazel/config:build_enterprise=False explicitly disables enterprise modules
 RUN export GIT_PYTHON_REFRESH=quiet && \
     if [ -n "${NUM_JOBS}" ] && [ "${NUM_JOBS}" -gt 0 ]; then \
         export JOBS_ARG="--jobs=${NUM_JOBS}"; \
     fi && \
     bazel build \
+        --config=local \
         --//bazel/config:build_enterprise=False \
         --disable_warnings_as_errors=True \
         ${JOBS_ARG} \
