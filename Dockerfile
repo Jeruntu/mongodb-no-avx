@@ -30,6 +30,11 @@ RUN mkdir /src && \
 
 WORKDIR /src
 
+# Create stub enterprise directory to satisfy build dependencies
+# MongoDB's open source build has references to enterprise paths that need to exist
+RUN mkdir -p src/mongo/db/modules/enterprise && \
+    touch src/mongo/db/modules/enterprise/BUILD.bazel
+
 # Install Bazelisk directly (handles correct Bazel version automatically)
 # This avoids needing MongoDB's install_bazel.py which has additional Python dependencies
 RUN mkdir -p /root/.local/bin && \
