@@ -37,7 +37,7 @@ jobs:
         uses: fenio/gh-rmrf@v1
         with:
           merge-disks: 'true'
-          build-mount-path: '/var/lib/docker/'
+          mount-path: '/var/lib/docker/'
 
       - name: Restore Docker data
         run: |
@@ -102,7 +102,7 @@ jobs:
         uses: fenio/gh-rmrf@v1
         with:
           merge-disks: 'true'
-          build-mount-path: '/var/lib/docker/'
+          mount-path: '/var/lib/docker/'
 
       - name: Restore Docker data
         run: |
