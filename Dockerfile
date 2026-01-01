@@ -78,6 +78,11 @@ RUN rm -rf build
 # Final image
 FROM debian:12-slim
 
+# OCI labels for GitHub Container Registry
+LABEL org.opencontainers.image.source=https://github.com/fenio/mongodb-no-avx
+LABEL org.opencontainers.image.description="MongoDB 7.0 compiled without AVX/AVX2 CPU requirements"
+LABEL org.opencontainers.image.licenses=MIT
+
 # Install runtime dependencies
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
