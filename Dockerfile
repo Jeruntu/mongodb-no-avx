@@ -35,6 +35,11 @@ WORKDIR /src
 COPY ./no_avx_patch.diff /no_avx_patch.diff
 RUN patch -p1 < /no_avx_patch.diff
 
+# Also remove -mavx2 flag from mozjs (SpiderMonkey JS engine) build
+# This flag is hardcoded in the mozjs SConscript and causes SIGILL on non-AVX CPUs
+RUN find . -name "SConscript" -exec grep -l "mavx2" {} \; | xargs -r sed -i 's/-mavx2//g' && \
+    find . -name "*.py" -exec grep -l "mavx2" {} \; | xargs -r sed -i 's/-mavx2//g' || true
+
 ARG NUM_JOBS=
 
 # Install Python build dependencies
