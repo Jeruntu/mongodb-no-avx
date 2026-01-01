@@ -35,10 +35,15 @@ WORKDIR /src
 COPY ./no_avx_patch.diff /no_avx_patch.diff
 RUN patch -p1 < /no_avx_patch.diff
 
-# Also remove -mavx2 flag from mozjs (SpiderMonkey JS engine) build
-# This flag is hardcoded in the mozjs SConscript and causes SIGILL on non-AVX CPUs
-RUN find . -name "SConscript" -exec grep -l "mavx2" {} \; | xargs -r sed -i 's/-mavx2//g' && \
-    find . -name "*.py" -exec grep -l "mavx2" {} \; | xargs -r sed -i 's/-mavx2//g' || true
+# Apply mozjs (SpiderMonkey JS engine) patch to remove AVX2 requirement
+# This patch:
+# 1. Removes -mavx2 compiler flag from mozjs SConscript
+# 2. Removes SIMD_avx2.cpp from the build (keeps only SSE.cpp)
+# 3. Disables AVX2 support check in SIMD.cpp
+# Without this, mongod crashes with SIGILL (exit code 132) on non-AVX2 CPUs
+# Patch from: https://github.com/GermanAizek/mongodb-without-avx/issues/16
+COPY ./mozjs-noavx.patch /mozjs-noavx.patch
+RUN patch -p1 < /mozjs-noavx.patch
 
 ARG NUM_JOBS=
 
